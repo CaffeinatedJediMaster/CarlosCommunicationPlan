@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carlos Martin — BLE Learning Packet</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #F0EEE9;
+  --near-black: #071B1D;
+  --teal-deep: #0B676E;
+  --teal-mid: #389FA4;
+  --orange: #EF781B;
+  --cream-dark: #E4E2DC;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background: #050F10;
+  overflow: hidden;
+}
+
+/* BOOK CONTAINER */
+.book-scene {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: radial-gradient(ellipse at center, #0D2B2E 0%, #050F10 70%);
+}
+
+/* PAGE COUNTER */
+.page-counter {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(240,238,233,0.75);
+  z-index: 100;
+}
+
+/* BOOK */
+.book {
+  width: min(420px, 94vw);
+  height: min(680px, 82vh);
+  position: relative;
+  perspective: 2000px;
+}
+
+.book-shadow {
+  position: absolute;
+  bottom: -20px;
+  left: 5%;
+  right: 5%;
+  height: 40px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%);
+  filter: blur(8px);
+}
+
+/* PAGE */
+.page {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px 6px 6px 2px;
+  display: none;
+  overflow: hidden;
+  box-shadow:
+    2px 0 8px rgba(0,0,0,0.3),
+    inset -1px 0 0 rgba(0,0,0,0.1);
+}
+
+.page.active {
+  display: flex;
+}
+
+.page.animating-out {
+  display: flex;
+  animation: pageFlipOut 0.35s ease-in forwards;
+}
+
+.page.animating-in {
+  display: flex;
+  animation: pageFlipIn 0.35s ease-out forwards;
+}
+
+@keyframes pageFlipOut {
+  0% { transform: rotateY(0deg); opacity: 1; transform-origin: left center; }
+  100% { transform: rotateY(-90deg); opacity: 0; transform-origin: left center; }
+}
+
+@keyframes pageFlipIn {
+  0% { transform: rotateY(90deg); opacity: 0; transform-origin: left center; }
+  100% { transform: rotateY(0deg); opacity: 1; transform-origin: left center; }
+}
+
+/* SPINE */
+.spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(to right, #054A50, #0B676E);
+  border-radius: 2px 0 0 2px;
+  z-index: 10;
+}
+
+/* PAGE LAYOUTS */
+.page-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+/* COVER PAGE */
+.cover {
+  background: var(--near-black);
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.25rem 2rem 2rem;
+}
+
+.cover-top { display: flex; flex-direction: column; }
+
+.ble-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 2rem;
+}
+
+.cover-bar { width: 48px; height: 2px; background: var(--orange); margin-bottom: 1.5rem; }
+
+.cover-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.0;
+  margin-bottom: 0.75rem;
+}
+
+.cover-accent {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--orange);
+  margin-bottom: 2rem;
+}
+
+.cover-quote {
+  border-left: 2px solid rgba(239,120,27,0.4);
+  padding: 0.75rem 1rem;
+}
+
+.cover-quote p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-style: italic;
+  color: rgba(240,238,233,0.92);
+  line-height: 1.65;
+}
+
+.cover-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.cover-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cover-meta-item {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(240,238,233,0.88);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cover-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--teal-deep); }
+
+.cover-page-hint {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(240,238,233,0.65);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cover-page-hint::after {
+  content: '→';
+  color: var(--orange);
+  opacity: 0.6;
+}
+
+/* CONTENT PAGES */
+.content-page {
+  background: var(--cream);
+  flex-direction: column;
+}
+
+.content-header {
+  background: var(--near-black);
+  padding: 1rem 1.5rem 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.content-header-left { display: flex; flex-direction: column; }
+
+.ch-eyebrow {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 3px;
+}
+
+.ch-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.1;
+}
+
+.ch-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(240,238,233,0.85);
+  margin-top: 2px;
+}
+
+.ch-weeks {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(240,238,233,0.75);
+  text-align: right;
+  margin-top: 2px;
+}
+
+.content-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem 0.85rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(11,103,110,0.3) transparent;
+}
+
+.content-body::-webkit-scrollbar { width: 3px; }
+.content-body::-webkit-scrollbar-thumb { background: rgba(11,103,110,0.3); border-radius: 2px; }
+
+.content-footer {
+  height: 3px;
+  background: var(--orange);
+  flex-shrink: 0;
+}
+
+/* CONTENT COMPONENTS */
+.c-block { margin-bottom: 1rem; }
+.c-block:last-child { margin-bottom: 0; }
+
+.c-eyebrow {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 4px;
+}
+
+.c-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--near-black);
+  margin-bottom: 0.6rem;
+}
+
+.c-body {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #2A4A4C;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.c-italic {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--teal-mid);
+  line-height: 1.6;
+}
+
+/* NORTH STAR BOX */
+.ns-box {
+  background: var(--near-black);
+  border-radius: 2px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.ns-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 6px;
+}
+
+.ns-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1.6;
+}
+
+/* DNA GRID */
+.dna-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 1rem; }
+
+.dna-card {
+  background: #fff;
+  border: 1px solid rgba(11,103,110,0.15);
+  border-radius: 2px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.dna-pct {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--teal-deep);
+  margin-bottom: 2px;
+}
+
+.dna-pct.orange { color: var(--orange); }
+.dna-pct.dark { color: var(--near-black); }
+
+.dna-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--near-black);
+  margin-bottom: 3px;
+}
+
+.dna-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--teal-mid);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+/* SESSION TEMPLATE */
+.st-rows { display: flex; flex-direction: column; gap: 0; }
+
+.st-row {
+  display: grid;
+  grid-template-columns: 44px 62px 1fr;
+  gap: 6px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(11,103,110,0.1);
+  align-items: start;
+}
+
+.st-row:last-child { border-bottom: none; }
+
+.st-time {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--teal-mid);
+  padding-top: 1px;
+}
+
+.st-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 1px;
+}
+
+.tag-open { color: var(--teal-deep); }
+.tag-learn { color: var(--teal-mid); }
+.tag-listen { color: #1A6E72; }
+.tag-do { color: var(--orange); }
+.tag-refine { color: var(--near-black); }
+
+.st-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  line-height: 1.6;
+}
+
+/* FLEX RULE */
+.flex-rule {
+  border-left: 2px solid var(--teal-deep);
+  padding: 0.7rem 0.9rem;
+  background: rgba(11,103,110,0.05);
+  margin-bottom: 1rem;
+}
+
+.flex-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 4px;
+}
+
+.flex-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  line-height: 1.7;
+}
+
+.flex-text strong { font-weight: 500; color: var(--teal-deep); }
+
+/* PROTOCOL */
+.protocol {
+  border-left: 2px solid var(--orange);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.protocol-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 6px;
+}
+
+.proto-list { list-style: none; }
+
+.proto-list li {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  padding: 2px 0;
+  line-height: 1.65;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.proto-list li::before {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* LANG FOCUS */
+.lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 1rem; }
+
+.lang-card {
+  background: #fff;
+  border: 1px solid rgba(11,103,110,0.12);
+  border-radius: 2px;
+  padding: 0.65rem 0.75rem;
+}
+
+.lang-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-mid);
+  margin-bottom: 3px;
+}
+
+.lang-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  line-height: 1.55;
+}
+
+/* IDIOM BADGES */
+.idiom-wrap { margin-bottom: 1rem; }
+.idiom-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-mid);
+  margin-bottom: 5px;
+}
+.idiom-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.idiom-badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--teal-deep);
+  background: rgba(11,103,110,0.08);
+  border: 1px solid rgba(11,103,110,0.15);
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+
+/* WEEKS */
+.week-block { margin-bottom: 0.75rem; }
+.week-block:last-child { margin-bottom: 0; }
+
+.week-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-mid);
+  margin-bottom: 4px;
+}
+
+.week-days { display: grid; grid-template-columns: 1fr; gap: 6px; }
+
+.day-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-mid);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+.mon-dot { background: var(--teal-deep); }
+.wed-dot { background: var(--orange); }
+
+.day-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  line-height: 1.6;
+}
+
+/* MILESTONE */
+.milestone {
+  background: var(--near-black);
+  border-radius: 2px;
+  padding: 0.75rem 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.milestone-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 4px;
+}
+
+.milestone-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--cream);
+  line-height: 1.65;
+}
+
+/* HW STRIP */
+.hw-strip {
+  background: rgba(11,103,110,0.06);
+  border-left: 2px solid var(--teal-deep);
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.hw-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 3px;
+}
+
+.hw-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  line-height: 1.6;
+}
+
+/* DRILLS */
+.drill-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+
+.drill-item {
+  background: #fff;
+  border: 1px solid rgba(11,103,110,0.12);
+  border-radius: 2px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.drill-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal-deep);
+  opacity: 0.4;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.drill-content { flex: 1; }
+
+.drill-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--near-black);
+  margin-bottom: 2px;
+}
+
+.drill-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #2A4A4C;
+  line-height: 1.6;
+}
+
+/* GRAMMAR TABLE */
+.grammar-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+
+.grammar-row {
+  background: #fff;
+  border: 1px solid rgba(11,103,110,0.12);
+  border-radius: 2px;
+  padding: 0.65rem 0.75rem;
+}
+
+.gr-phase {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 2px;
+}
+
+.gr-structure {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--near-black);
+  margin-bottom: 2px;
+}
+
+.gr-why {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #2A4A4C;
+  line-height: 1.6;
+}
+
+.gr-example {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--teal-mid);
+  margin-top: 3px;
+}
+
+/* IDIOM TABLE */
+.idiom-table-wrap { margin-bottom: 1rem; }
+
+.idiom-table { width: 100%; border-collapse: collapse; }
+
+.idiom-table th {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal-mid);
+  text-align: left;
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(11,103,110,0.2);
+}
+
+.idiom-table td {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--near-black);
+  padding: 6px;
+  border-bottom: 1px solid rgba(11,103,110,0.07);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.idiom-table tr:last-child td { border-bottom: none; }
+
+.idiom-table td:first-child {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--teal-mid);
+  white-space: nowrap;
+}
+
+.level-pill {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.lp1 { background: rgba(11,103,110,0.1); color: var(--teal-deep); }
+.lp2 { background: rgba(56,159,164,0.12); color: #1A6E72; }
+.lp3 { background: rgba(239,120,27,0.1); color: #7A3A00; }
+.lp4 { background: rgba(7,27,29,0.08); color: var(--near-black); }
+.lp5 { background: rgba(239,120,27,0.18); color: #5A2800; }
+.lp-all { background: var(--near-black); color: var(--cream); }
+
+.idiom-phrase-list {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--teal-mid);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* ARTIFACT BOX */
+.artifact-box {
+  background: #fff;
+  border: 1.5px solid var(--teal-deep);
+  border-radius: 2px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.artifact-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin-bottom: 5px;
+}
+
+.artifact-asks { list-style: none; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+
+.artifact-asks li {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #2A4A4C;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.artifact-asks li::before {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--teal-deep);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* BACK COVER */
+.back-cover {
+  background: var(--teal-deep);
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.25rem 2rem 2rem;
+}
+
+.bc-top { display: flex; flex-direction: column; }
+
+.bc-eyebrow {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(240,238,233,0.85);
+  margin-bottom: 1.5rem;
+}
+
+.bc-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+}
+
+.bc-accent {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  color: var(--orange);
+  margin-bottom: 2rem;
+}
+
+.bc-milestones { display: flex; flex-direction: column; gap: 10px; }
+
+.bc-milestone {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.bc-m-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.bc-m-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: rgba(240,238,233,0.95);
+  line-height: 1.6;
+}
+
+.bc-m-bold {
+  font-weight: 500;
+  color: var(--cream);
+}
+
+.bc-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.bc-brand {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(240,238,233,0.8);
+}
+
+/* NAVIGATION */
+.nav-area {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(240,238,233,0.35);
+  background: rgba(240,238,233,0.08);
+  color: rgba(240,238,233,0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: rgba(240,238,233,0.12);
+  border-color: rgba(240,238,233,0.3);
+  color: var(--cream);
+}
+
+.nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+.nav-dots { display: flex; gap: 6px; }
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(240,238,233,0.45);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.nav-dot.active {
+  background: var(--orange);
+  transform: scale(1.2);
+}
+
+.nav-dot:hover { background: rgba(240,238,233,0.5); }
+
+/* DIVIDER */
+.c-divider {
+  height: 1px;
+  background: rgba(11,103,110,0.15);
+  margin: 0.75rem 0;
+}
+
+@media (max-width: 480px) {
+  .cover-headline { font-size: 30px; }
+  .bc-headline { font-size: 22px; }
+  .lang-grid { grid-template-columns: 1fr; }
+  .dna-grid { grid-template-columns: 1fr 1fr; }
+  .st-row { grid-template-columns: 38px 54px 1fr; font-size: 10px; }
+  .content-body { padding: 0.85rem 1.1rem 0.75rem; }
+  .content-header { padding: 0.85rem 1.1rem 0.75rem; }
+  .cover, .back-cover { padding: 1.75rem 1.5rem 1.5rem; }
+  .ch-title { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="book-scene">
+  <div class="page-counter" id="pageCounter">1 / 10</div>
+
+  <div class="book">
+    <div class="book-shadow"></div>
+
+    <!-- PAGE 1: COVER -->
+    <div class="page active" id="page-0">
+      <div class="spine"></div>
+      <div class="page-inner cover">
+        <div class="cover-top">
+          <p class="ble-label">Better Life English</p>
+          <div class="cover-bar"></div>
+          <h1 class="cover-headline">Carlos<br>Martin</h1>
+          <p class="cover-accent">12-Week Communication Curriculum</p>
+          <div class="cover-quote">
+            <p>"In Spanish, my brain works fast. I do not prepare. I just speak. I want that in English."</p>
+          </div>
+        </div>
+        <div class="cover-bottom">
+          <div class="cover-meta">
+            <span class="cover-meta-item"><span class="cover-meta-dot"></span>60 minutes per session</span>
+            <span class="cover-meta-item"><span class="cover-meta-dot"></span>Goal: October 2026</span>
+          </div>
+          <span class="cover-page-hint">Turn the page</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: HOW SESSIONS WORK -->
+    <div class="page" id="page-1">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Foundation</span>
+            <p class="ch-title">How Every Session Works</p>
+            <p class="ch-sub">Learn. Listen. Do. Refine.</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <div class="c-block">
+            <div class="dna-grid">
+              <div class="dna-card">
+                <div class="dna-pct">20%</div>
+                <div class="dna-name">Learn</div>
+                <div class="dna-desc">One phrase, idiom, or grammar structure. Context first. Short explanation. We move fast.</div>
+              </div>
+              <div class="dna-card">
+                <div class="dna-pct orange">60%</div>
+                <div class="dna-name">Do</div>
+                <div class="dna-desc">Live practice. Real scenarios from your job. No script. English under pressure.</div>
+              </div>
+              <div class="dna-card">
+                <div class="dna-pct dark">20%</div>
+                <div class="dna-name">Refine</div>
+                <div class="dna-desc">We fix one thing together. You say it again. We save your progress. Anything we did not finish today becomes your homework.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="c-block">
+            <p class="c-eyebrow">The 60-minute template</p>
+            <div class="st-rows">
+              <div class="st-row">
+                <span class="st-time">0:00</span>
+                <span class="st-tag tag-open">Open · 8 min</span>
+                <span class="st-desc">You bring a challenge, something you want to improve, or something you want to practice. We use it in the session.</span>
+              </div>
+              <div class="st-row">
+                <span class="st-time">0:08</span>
+                <span class="st-tag tag-learn">Learn · 6 min</span>
+                <span class="st-desc">One idiom, phrase, or grammar structure. Context first. Explanation short.</span>
+              </div>
+              <div class="st-row">
+                <span class="st-time">0:14</span>
+                <span class="st-tag tag-listen">Listen · 4 min</span>
+                <span class="st-desc">Brian speaks 90 seconds at full meeting pace. You take notes. You summarize back using the Bottom Line Up Front technique. Every session.</span>
+              </div>
+              <div class="st-row">
+                <span class="st-time">0:18</span>
+                <span class="st-tag tag-do">Do · 35 min</span>
+                <span class="st-desc">Live practice from a real scenario. You speak. No correction during performance. Stay in it.</span>
+              </div>
+              <div class="st-row">
+                <span class="st-time">0:53</span>
+                <span class="st-tag tag-refine">Refine · 7 min</span>
+                <span class="st-desc">We focus on one thing to fix. You say it again. We write it down. Anything we did not finish today becomes homework.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-rule">
+            <div class="flex-label">The flexibility rule</div>
+            <div class="flex-text">The plan is a guide, not a strict script. <strong>Every session starts with what you bring.</strong> We use it in class. <strong>What we do not finish becomes the homework.</strong> Nothing gets lost.</div>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: FLUENCY DRILLS -->
+    <div class="page" id="page-2">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Core training</span>
+            <p class="ch-title">Fluency Drills</p>
+            <p class="ch-sub">These run every session. All 12 weeks.</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <p class="c-body" style="margin-bottom:1rem;">The phrases are tools, not the goal. The goal is to think and respond in English right away — without stopping to translate in your head. These five drills help you do that.</p>
+
+          <ul class="drill-list">
+            <li class="drill-item">
+              <span class="drill-num">01</span>
+              <div class="drill-content">
+                <p class="drill-name">Listening drill — every session, every week</p>
+                <p class="drill-desc">Brian speaks at full meeting speed for 90 seconds — idioms, technical language, different accents. You take notes. You summarize back using BLUF. It starts simple in Week 1 and gets harder each week. Helps you understand English when people speak fast.</p>
+              </div>
+            </li>
+            <li class="drill-item">
+              <span class="drill-num">02</span>
+              <div class="drill-content">
+                <p class="drill-name">Continuous speech — every Monday from Week 2</p>
+                <p class="drill-desc">You speak about a work topic for 90 seconds without stopping. No self-correction. If you stop, Brian says one word: "Continue." The content does not matter. The only rule is: keep going. This helps you stop freezing in the middle of a sentence.</p>
+              </div>
+            </li>
+            <li class="drill-item">
+              <span class="drill-num">03</span>
+              <div class="drill-content">
+                <p class="drill-name">Speed recognition — every Wednesday from Week 2</p>
+                <p class="drill-desc">Brian describes a meeting situation. You say the right phrase in under five seconds. No pause, no preparation. This helps you use phrases automatically — without thinking or searching — in real meetings.</p>
+              </div>
+            </li>
+            <li class="drill-item">
+              <span class="drill-num">04</span>
+              <div class="drill-content">
+                <p class="drill-name">Living vocabulary — every Refine stage</p>
+                <p class="drill-desc">After each session, we save three words or phrases you understood but hesitated to use. These are not idioms — they are everyday professional words, connectors, and precise terms from your job. They go into your personal vocabulary list.</p>
+              </div>
+            </li>
+            <li class="drill-item">
+              <span class="drill-num">05</span>
+              <div class="drill-content">
+                <p class="drill-name">Pronunciation rep — when triggered</p>
+                <p class="drill-desc">When a word makes you stop or hesitate: 30 seconds of focused practice. Just the word, three times, at normal speed, in a sentence. This is about confidence, not accent.</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="protocol">
+            <div class="protocol-label">Confidence rules — all 12 weeks</div>
+            <ul class="proto-list">
+              <li>When you stop mid-sentence: keep going. Finish the idea. We fix the words after.</li>
+              <li>At the end of every practice: say it again. Saying it again helps your brain remember it.</li>
+              <li>When someone disagrees with you: hold your position first. Explain second.</li>
+              <li>When you feel your English is bad: look at your vocabulary list. The progress is there.</li>
+            </ul>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: GRAMMAR IN CONTEXT -->
+    <div class="page" id="page-3">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Structure</span>
+            <p class="ch-title">Grammar in Context</p>
+            <p class="ch-sub">Taught through your real job, not abstract drills.</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <p class="c-body" style="margin-bottom:1rem;">Grammar mistakes can break your confidence. You notice the error, you stop, and you lose the moment. We do not study grammar in isolation. We practice it inside the real situations where it matters.</p>
+
+          <div class="grammar-rows">
+            <div class="grammar-row">
+              <p class="gr-phase">Phase 1 — Weeks 1 to 4</p>
+              <p class="gr-structure">Present perfect vs. simple past</p>
+              <p class="gr-why">The tense Carlos uses most in Tuesday status updates. One wrong tense changes whether the work is done or still happening — critical for project reporting.</p>
+              <p class="gr-example">"We have completed the assessment." vs. "We completed it last Tuesday."</p>
+            </div>
+            <div class="grammar-row">
+              <p class="gr-phase">Phase 1 — Weeks 1 to 4</p>
+              <p class="gr-structure">BLUF — Bottom Line Up Front</p>
+              <p class="gr-why">Engineers build to the conclusion. Meetings reward leading with it. One sentence structure: "The bottom line is X. Here is why." Used in every English update from Week 2 forward.</p>
+              <p class="gr-example">"The bottom line is the BOP certification is delayed two weeks. Here is why."</p>
+            </div>
+            <div class="grammar-row">
+              <p class="gr-phase">Phase 2 — Weeks 5 to 8</p>
+              <p class="gr-structure">Modal verbs: could, should, would</p>
+              <p class="gr-why">The language of diplomatic disagreement. Holding position without sounding aggressive. Critical for pushback practices and contractor disputes.</p>
+              <p class="gr-example">"I could see this working if we..." / "We should consider the timeline before..."</p>
+            </div>
+            <div class="grammar-row">
+              <p class="gr-phase">Phase 3 — Weeks 9 to 12</p>
+              <p class="gr-structure">Passive voice for technical translation</p>
+              <p class="gr-why">Presents data without making it personal. Essential for stakeholder reporting to non-technical audiences. Carlos already does this in Spanish — this transfers the skill to English.</p>
+              <p class="gr-example">"The BOP was inspected and certified." vs. "We inspected and certified the BOP."</p>
+            </div>
+          </div>
+
+          <div class="artifact-box">
+            <div class="artifact-label">Before Phase 2 — bring one or two work documents</div>
+            <div class="c-body">Bring something from your real job — remove any private details first. We will use your real vocabulary and situations directly in the practice sessions.</div>
+            <ul class="artifact-asks">
+              <li>A slide deck or update from your Tuesday meetings</li>
+              <li>An email or report you write regularly in English</li>
+              <li>Any document with technical language you use with managers or contractors</li>
+            </ul>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: PHASE 1 -->
+    <div class="page" id="page-4">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Phase 1</span>
+            <p class="ch-title">Understanding and Joining</p>
+            <p class="ch-sub">Stop feeling lost. Start speaking up.</p>
+          </div>
+          <div>
+            <p class="ch-weeks">Weeks 1–4</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <div class="lang-grid">
+            <div class="lang-card">
+              <p class="lang-label">Language focus</p>
+              <p class="lang-text">BLUF. Present perfect vs. past. Meeting entry phrases. Buying time phrases. Active voice.</p>
+            </div>
+            <div class="lang-card">
+              <p class="lang-label">Objective</p>
+              <p class="lang-text">Speak clearly in status updates. Enter the conversation before the moment passes.</p>
+            </div>
+          </div>
+
+          <div class="idiom-wrap">
+            <p class="idiom-label">Level 1 idioms — meeting starters</p>
+            <div class="idiom-badges">
+              <span class="idiom-badge">Get the ball rolling</span>
+              <span class="idiom-badge">Kick off</span>
+              <span class="idiom-badge">Get down to business</span>
+              <span class="idiom-badge">Up to speed</span>
+              <span class="idiom-badge">Touch base</span>
+              <span class="idiom-badge">On the same page</span>
+              <span class="idiom-badge">Bring to the table</span>
+              <span class="idiom-badge">From the ground up</span>
+              <span class="idiom-badge">In a nutshell</span>
+              <span class="idiom-badge">The big picture</span>
+            </div>
+          </div>
+
+          <div class="week-block">
+            <p class="week-tag">Week 1</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Curriculum alignment. Level 1 idiom recognition. Listening drill begins. Live rep: 90-second project update.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Level 1 idioms in a simulated Tuesday meeting. Brian plays Houston PM. Focus: finish every sentence.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 2</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">BLUF introduced. Continuous speech drill begins. Entry phrases: "Can I add something?" / "Before we move on."</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Rig documentation coordination call. Enter the conversation two times. Speed drill begins.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 3</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Level 2 idioms in drilling scenarios. Present perfect vs. past introduced. "We have completed..." vs. "We completed..."</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Comprehension drill. Brian speaks at pace. Carlos summarizes back using BLUF.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 4</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Buying time phrases. "Good question — let me check and come back to you." Milestone recording done before this session.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Speed drill. Live 3-minute status update to a new CEO. Milestone reviewed together.</p></div>
+            </div>
+          </div>
+
+          <div class="hw-strip">
+            <p class="hw-label">Between sessions</p>
+            <p class="hw-text">One 5-minute voice memo every day. Your work day in English. No script. No editing. Just reps. Anything uncovered in class goes here.</p>
+          </div>
+
+          <div class="milestone">
+            <p class="milestone-label">Phase 1 milestone — before Week 4 Wednesday</p>
+            <p class="milestone-text">Record a 90-second Tuesday meeting update. Do not stop. Do not self-correct. Use at least two Level 1 or 2 idioms naturally. Send it to Brian before the session. This is the deliverable — not a test score.</p>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 6: PHASE 2 -->
+    <div class="page" id="page-5">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Phase 2</span>
+            <p class="ch-title">Speaking with Confidence</p>
+            <p class="ch-sub">Hold your position. Handle the pressure.</p>
+          </div>
+          <div>
+            <p class="ch-weeks">Weeks 5–8</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <div class="lang-grid">
+            <div class="lang-card">
+              <p class="lang-label">Language focus</p>
+              <p class="lang-text">Modal verbs: could, should, would. Diplomatic disagreement. Redirecting language. Multi-accent comprehension.</p>
+            </div>
+            <div class="lang-card">
+              <p class="lang-label">Objective</p>
+              <p class="lang-text">Speak when the meeting is fast. Hold position when pushed. Handle unexpected questions without retreating.</p>
+            </div>
+          </div>
+
+          <div class="idiom-wrap">
+            <p class="idiom-label">Level 2 and 3 idioms — strategy, planning, brainstorming</p>
+            <div class="idiom-badges">
+              <span class="idiom-badge">Ballpark figure</span>
+              <span class="idiom-badge">On the radar</span>
+              <span class="idiom-badge">Move the needle</span>
+              <span class="idiom-badge">Deep dive</span>
+              <span class="idiom-badge">Low-hanging fruit</span>
+              <span class="idiom-badge">Back to the drawing board</span>
+              <span class="idiom-badge">Drill down</span>
+              <span class="idiom-badge">Elephant in the room</span>
+              <span class="idiom-badge">Bottleneck</span>
+              <span class="idiom-badge">In the loop</span>
+              <span class="idiom-badge">Uphill battle</span>
+            </div>
+          </div>
+
+          <div class="week-block">
+            <p class="week-tag">Week 5</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Level 3 idioms in a well design meeting. Modal verbs introduced: "I could see this working if..." / "We should consider..."</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Pushback practice. Brian plays Australian drilling manager. Carlos holds position using BLUF and modal verbs.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 6</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Multi-accent session: Houston, Scotland, Canada. Track meaning — not pronunciation. Understand first, respond second.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Redirecting language. "The short answer is yes, but the fuller picture is..." Inside a live technical disagreement.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 7</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Level 4 idioms in real drilling scenarios: budget cuts, missed certifications, contractor delays. We use your actual work documents.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Case Study 26. Explain the $28M BOP failure while a stakeholder keeps interrupting. Hold the thread. Finish.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 8</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Checkpoint. Carlos leads the debrief. What is working. Where the block remains. Brian listens.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Milestone session. Full 15-minute Tuesday meeting practice. Brian plays two roles. Carlos speaks three times minimum. Handles one unexpected question live.</p></div>
+            </div>
+          </div>
+
+          <div class="hw-strip">
+            <p class="hw-label">Between sessions</p>
+            <p class="hw-text">After every real meeting: one sentence. "One thing I said in that meeting." Not what you wished — what you actually said.</p>
+          </div>
+
+          <div class="milestone">
+            <p class="milestone-label">Phase 2 milestone — Week 8 Wednesday</p>
+            <p class="milestone-text">A live simulated 15-minute meeting. Unexpected questions. A disruptive stakeholder. Carlos manages it without retreating. He does not record it to review later. He gets it in the room.</p>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 7: PHASE 3 -->
+    <div class="page" id="page-6">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Phase 3</span>
+            <p class="ch-title">Leading the Meeting</p>
+            <p class="ch-sub">Run the room. Sound like the engineer you already are.</p>
+          </div>
+          <div>
+            <p class="ch-weeks">Weeks 9–12</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <div class="lang-grid">
+            <div class="lang-card">
+              <p class="lang-label">Language focus</p>
+              <p class="lang-text">Signposting expressions. Transition vocabulary. Action item language. Passive voice for stakeholder reporting.</p>
+            </div>
+            <div class="lang-card">
+              <p class="lang-label">Objective</p>
+              <p class="lang-text">Open, guide, and close a meeting. Present complex data simply. Sound like someone who is in charge.</p>
+            </div>
+          </div>
+
+          <div class="idiom-wrap">
+            <p class="idiom-label">Level 4 and 5 idioms — conflict, closing, action items</p>
+            <div class="idiom-badges">
+              <span class="idiom-badge">Bite the bullet</span>
+              <span class="idiom-badge">Spinning your wheels</span>
+              <span class="idiom-badge">See eye to eye</span>
+              <span class="idiom-badge">Call the shots</span>
+              <span class="idiom-badge">The bottom line</span>
+              <span class="idiom-badge">Ball is in your court</span>
+              <span class="idiom-badge">Cut to the chase</span>
+              <span class="idiom-badge">Take it offline</span>
+              <span class="idiom-badge">Get your ducks in a row</span>
+              <span class="idiom-badge">Hit the ground running</span>
+              <span class="idiom-badge">Wrap up</span>
+            </div>
+          </div>
+
+          <div class="week-block">
+            <p class="week-tag">Week 9</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Level 5 idioms. Signposting: "What I want to show you today is..." / "To summarize the bottom line..." Language of running the room.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Carlos opens a simulated kickoff. Sets agenda. Brian plays senior rig manager. Focus: the first 90 seconds.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 10</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Full 15-minute coordination call. Brian plays contractor and drilling manager simultaneously. Carlos manages both and closes with action items.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Risk assessment update to a new CEO with no drilling background. Passive voice used to translate technical data clearly.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 11</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">All 50 idioms. No levels, no labels, no warning. Brian runs a fast meeting. You track and respond. The goal is automatic recognition — no searching, no hesitation.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Senior stakeholder pushes back hard on timeline and cost. Carlos holds position, redirects, closes with action items.</p></div>
+            </div>
+          </div>
+          <div class="week-block">
+            <p class="week-tag">Week 12</p>
+            <div class="week-days">
+              <div><p class="day-label"><span class="dot mon-dot"></span>Monday</p><p class="day-text">Final milestone session. Full meeting. Carlos speaks four times — one interruption, one redirect, one unexpected answer, one close.</p></div>
+              <div><p class="day-label"><span class="dot wed-dot"></span>Wednesday</p><p class="day-text">Reflection. Carlos debriefs his own growth. Canvas note in his words. His voice. His English.</p></div>
+            </div>
+          </div>
+
+          <div class="hw-strip">
+            <p class="hw-label">Between sessions</p>
+            <p class="hw-text">Before every real meeting: one sentence — "In this meeting I will ___." After: did you do it.</p>
+          </div>
+
+          <div class="milestone">
+            <p class="milestone-label">Phase 3 milestone — Week 12 Monday</p>
+            <p class="milestone-text">Carlos opens, runs, and closes a full simulated Tuesday meeting. Sets agenda. Handles one interruption. Closes with action items. Brian plays two people. Carlos calls the shots. This is the proof.</p>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 8: IDIOM ROADMAP -->
+    <div class="page" id="page-7">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Reference</span>
+            <p class="ch-title">Idiom Roadmap</p>
+            <p class="ch-sub">50 phrases. 12 weeks. Always in context.</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <p class="c-body" style="margin-bottom:1rem;">Every phrase is practiced inside a real drilling engineering situation — BOPs, risk assessments, rig documentation, stakeholder reporting. We never practice in the abstract. Every phrase has to work in a real sentence from your job.</p>
+
+          <div class="idiom-table-wrap">
+            <table class="idiom-table">
+              <thead>
+                <tr>
+                  <th>Weeks</th>
+                  <th>Level</th>
+                  <th>Focus and phrases</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1–2</td>
+                  <td><span class="level-pill lp1">Level 1</span></td>
+                  <td>
+                    Meeting starters. Recognition first, then active use in a real drilling scenario.
+                    <div class="idiom-phrase-list">Get the ball rolling · Kick off · Get down to business · Up to speed · Touch base · On the same page · Bring to the table · From the ground up · In a nutshell · The big picture</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>3–4</td>
+                  <td><span class="level-pill lp2">Level 2</span></td>
+                  <td>
+                    Strategy and planning. The language of technical decision-making.
+                    <div class="idiom-phrase-list">Think outside the box · Game changer · Ballpark figure · On the radar · Move the needle · Raise the bar · Deep dive · Ahead of the curve · Low-hanging fruit · Back to the drawing board</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>5–6</td>
+                  <td><span class="level-pill lp3">Level 3</span></td>
+                  <td>
+                    Brainstorming and feedback. Contributing under pressure.
+                    <div class="idiom-phrase-list">Brainstorm · Keep your eye on the ball · Drill down · Long shot · No-brainer · Elephant in the room · Bottleneck · Red tape · Uphill battle · In the loop</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>7–8</td>
+                  <td><span class="level-pill lp4">Level 4</span></td>
+                  <td>
+                    Conflict and problem solving. Holding ground.
+                    <div class="idiom-phrase-list">Bite the bullet · Cut corners · Hands are tied · Spinning your wheels · Back to square one · In hot water · Rock the boat · Bite off more than you can chew · See eye to eye · Throw in the towel</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>9–10</td>
+                  <td><span class="level-pill lp5">Level 5</span></td>
+                  <td>
+                    Closing and action items. Running the room.
+                    <div class="idiom-phrase-list">Call the shots · The bottom line · Ball is in your court · Cut to the chase · Call it a day · Take it offline · Win-win · Get your ducks in a row · Hit the ground running · Wrap up</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>11–12</td>
+                  <td><span class="level-pill lp-all">All 50</span></td>
+                  <td>No scaffolding. No levels. No labels. Just English. The brain runs faster when it stops searching.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="ns-box">
+            <div class="ns-label">Remember</div>
+            <p class="ns-text">The phrases are tools. Fluency is the goal. Knowing phrases is not the same as fluency. The practice sessions, the drills, and the grammar work together — that is what gets you there.</p>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 9: BETWEEN SESSIONS -->
+    <div class="page" id="page-8">
+      <div class="spine"></div>
+      <div class="page-inner content-page">
+        <div class="content-header">
+          <div class="content-header-left">
+            <span class="ch-eyebrow">Outside the sessions</span>
+            <p class="ch-title">The Work Between</p>
+            <p class="ch-sub">The session is the engine. This is the fuel.</p>
+          </div>
+        </div>
+        <div class="content-body">
+
+          <p class="c-body" style="margin-bottom:1rem;">Two sessions a week is eight hours a month. Fluency is built in the other hours. These are your only commitments outside of class — each one is short, specific, and connected to something you already do.</p>
+
+          <div class="c-block">
+            <p class="c-eyebrow">Phase 1 — Weeks 1 to 4</p>
+            <ul class="drill-list">
+              <li class="drill-item">
+                <span class="drill-num">01</span>
+                <div class="drill-content">
+                  <p class="drill-name">Daily voice memo — 5 minutes</p>
+                  <p class="drill-desc">Talk about your work day in English. What happened. What you worked on. What is coming. No script. No editing. No sending. This is for you. The habit is the point.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="c-block">
+            <p class="c-eyebrow">Phase 2 — Weeks 5 to 8</p>
+            <ul class="drill-list">
+              <li class="drill-item">
+                <span class="drill-num">02</span>
+                <div class="drill-content">
+                  <p class="drill-name">Post-meeting sentence</p>
+                  <p class="drill-desc">After every real meeting at work: write one sentence. "One thing I said in that meeting." Not what you wished you said. What you actually said. This is documentation. It becomes the evidence your brain needs when it tells you your English is bad.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="c-block">
+            <p class="c-eyebrow">Phase 3 — Weeks 9 to 12</p>
+            <ul class="drill-list">
+              <li class="drill-item">
+                <span class="drill-num">03</span>
+                <div class="drill-content">
+                  <p class="drill-name">Pre-meeting intention</p>
+                  <p class="drill-desc">Before every real meeting: one sentence. "In this meeting I will ___." After the meeting: did you do it. The intention makes the moment deliberate. The check-in makes the growth visible.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="c-divider"></div>
+
+          <div class="c-block">
+            <p class="c-eyebrow">All 12 weeks</p>
+            <p class="c-headline">Nothing gets lost</p>
+            <p class="c-body">If something does not fit inside the session — a phrase, a situation, a grammar point — it becomes your homework for that week. The plan works around you, not the other way around.</p>
+          </div>
+
+          <div class="protocol">
+            <div class="protocol-label">The most important rule</div>
+            <ul class="proto-list">
+              <li>Do not wait for the session to practice. The session is where we build. The time between is where it sticks.</li>
+              <li>Five minutes of real speaking practice is worth more than one hour of reading or reviewing.</li>
+              <li>When you do not want to do the voice memo: do it anyway. That is exactly when it helps the most.</li>
+            </ul>
+          </div>
+
+        </div>
+        <div class="content-footer"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 10: BACK COVER -->
+    <div class="page" id="page-9">
+      <div class="spine"></div>
+      <div class="page-inner back-cover">
+        <div class="bc-top">
+          <p class="bc-eyebrow">Better Life English · Carlos Martin</p>
+          <h2 class="bc-headline">Three<br>Milestones.</h2>
+          <p class="bc-accent">Not test scores. Real proof.</p>
+          <div class="bc-milestones">
+            <div class="bc-milestone">
+              <span class="bc-m-num">01</span>
+              <span class="bc-m-text"><span class="bc-m-bold">Week 4.</span> A recorded 90-second Tuesday meeting update. No stopping. No self-correcting. Two idioms used naturally. Sent to Brian before the session.</span>
+            </div>
+            <div class="bc-milestone">
+              <span class="bc-m-num">02</span>
+              <span class="bc-m-text"><span class="bc-m-bold">Week 8.</span> A live 15-minute simulated meeting with unexpected questions and a disruptive stakeholder. Managed without retreating. In the room, in real time.</span>
+            </div>
+            <div class="bc-milestone">
+              <span class="bc-m-num">03</span>
+              <span class="bc-m-text"><span class="bc-m-bold">Week 12.</span> A full simulated Tuesday meeting. Carlos opens it, runs it, and closes it with action items. Brian plays two people. Carlos calls the shots.</span>
+            </div>
+          </div>
+        </div>
+        <div class="bc-bottom">
+          <p class="bc-brand">Better Life English</p>
+          <p style="font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:rgba(240,238,233,0.4);">betterlifeenglish.com</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="nav-area">
+    <button class="nav-btn" id="prevBtn" onclick="changePage(-1)" disabled>&#8592;</button>
+    <div class="nav-dots" id="navDots"></div>
+    <button class="nav-btn" id="nextBtn" onclick="changePage(1)">&#8594;</button>
+  </div>
+</div>
+
+<script>
+const TOTAL = 10;
+let current = 0;
+let animating = false;
+
+const dots = document.getElementById('navDots');
+const counter = document.getElementById('pageCounter');
+
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = (function(idx){ return function(){ goTo(idx); }; })(i);
+  dots.appendChild(d);
+}
+
+function updateUI() {
+  counter.textContent = (current + 1) + ' / ' + TOTAL;
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').disabled = current === TOTAL - 1;
+  const allDots = dots.querySelectorAll('.nav-dot');
+  allDots.forEach(function(d, i){ d.classList.toggle('active', i === current); });
+}
+
+function goTo(next) {
+  if (animating || next === current || next < 0 || next >= TOTAL) return;
+  animating = true;
+
+  const outPage = document.getElementById('page-' + current);
+  const inPage = document.getElementById('page-' + next);
+
+  outPage.classList.remove('active');
+  outPage.classList.add('animating-out');
+
+  setTimeout(function() {
+    outPage.classList.remove('animating-out');
+    inPage.classList.add('animating-in');
+
+    setTimeout(function() {
+      inPage.classList.remove('animating-in');
+      inPage.classList.add('active');
+      current = next;
+      updateUI();
+      animating = false;
+    }, 350);
+  }, 350);
+}
+
+function changePage(dir) {
+  goTo(current + dir);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changePage(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changePage(-1);
+});
+
+// Swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e){
+  const diff = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(diff) > 50) changePage(diff > 0 ? 1 : -1);
+});
+
+updateUI();
+</script>
+</body>
+</html>
